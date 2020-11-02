@@ -4,16 +4,13 @@ import sys
 import math
 import csv
 
-
 activate_codes_num = -1
 next_k_step = 1
 training_chunk = 0
 test_chunk = 1
 
 
-
-
-def add_history(data_history,training_key_set,output_size):
+def add_history(data_history, training_key_set, output_size):
     sum_history = {}
     for key in training_key_set:
         sum_vector = np.zeros(output_size)
@@ -31,20 +28,19 @@ def add_history(data_history,training_key_set,output_size):
     return sum_history
 
 
-
-def temporal_decay_add_history(data_set, key_set, output_size,within_decay_rate):
+def temporal_decay_add_history(data_set, key_set, output_size, within_decay_rate):
     sum_history = {}
     for key in key_set:
         vec_list = data_set[key]
         num_vec = len(vec_list) - 2
         his_list = np.zeros(output_size)
-        for idx in range(1,num_vec+1):
+        for idx in range(1, num_vec + 1):
             his_vec = np.zeros(output_size)
-            decayed_val = np.power(within_decay_rate,num_vec-idx)
+            decayed_val = np.power(within_decay_rate, num_vec - idx)
             for ele in vec_list[idx]:
                 his_vec[ele] = decayed_val
             his_list += his_vec
-        sum_history[key] = his_list/num_vec
+        sum_history[key] = his_list / num_vec
         # sum_history[key] = np.multiply(his_list / num_vec, IDF)
 
     return sum_history
@@ -57,19 +53,19 @@ def KNN(query_set, target_set, k):
     test_mat = []
     for key in query_set.keys():
         test_mat.append(query_set[key])
-    # print('Finding k nearest neighbors...')
+    print('Finding k nearest neighbors...')
     nbrs = NearestNeighbors(n_neighbors=k, algorithm='brute').fit(history_mat)
     distances, indices = nbrs.kneighbors(test_mat)
-    # print('Finish KNN search.' )
-    return indices,distances
+    print('Finish KNN search.')
+    return indices, distances
 
 
-def weighted_aggragate_outputs(data_chunk,training_key_set,index,distance,output_size):
+def weighted_aggragate_outputs(data_chunk, training_key_set, index, distance, output_size):
     output_vectors = []
     key_set = training_key_set
     for index_list_id in range(len(index)):
         outputs = []
-        for vec_idx in range(1,next_k_step+1):
+        for vec_idx in range(1, next_k_step + 1):
 
             target_vec_list = []
             weight_list = []
@@ -96,7 +92,8 @@ def weighted_aggragate_outputs(data_chunk,training_key_set,index,distance,output
 
 from sklearn.neighbors import NearestNeighbors
 
-def KNN_history_record1(sum_history, output_size,k):
+
+def KNN_history_record1(sum_history, output_size, k):
     history_mat = []
     for key in sum_history.keys():
         history_mat.append(sum_history[key])
@@ -107,7 +104,7 @@ def KNN_history_record1(sum_history, output_size,k):
     KNN_history = {}
     key_set = list(sum_history)
     for id in range(len(key_set)):
-#    for idx_list in indices:
+        #    for idx_list in indices:
         idx_list = indices[id]
         NN_history = np.zeros(output_size)
         for idx in idx_list:
@@ -115,11 +112,10 @@ def KNN_history_record1(sum_history, output_size,k):
         NN_history = NN_history / k
         KNN_history[key_set[id]] = NN_history
 
-
-
     return KNN_history
 
-def KNN_history_record2(query_set, sum_history, output_size,k):
+
+def KNN_history_record2(query_set, sum_history, output_size, k):
     history_mat = []
     for key in sum_history.keys():
         history_mat.append(sum_history[key])
@@ -133,7 +129,7 @@ def KNN_history_record2(query_set, sum_history, output_size,k):
     key_set = list(query_set)
     training_key_set = list(sum_history)
     for id in range(len(key_set)):
-#    for idx_list in indices:
+        #    for idx_list in indices:
         idx_list = indices[id]
         NN_history = np.zeros(output_size)
         for idx in idx_list:
@@ -141,122 +137,139 @@ def KNN_history_record2(query_set, sum_history, output_size,k):
         NN_history = NN_history / k
         KNN_history[key_set[id]] = NN_history
 
+    return KNN_history, indices
 
-    return KNN_history,indices
-def group_history_list(his_list,group_size):
+
+def group_history_list(his_list, group_size):
     grouped_vec_list = []
     if len(his_list) < group_size:
-        #sum = np.zeros(len(his_list[0]))
+        # sum = np.zeros(len(his_list[0]))
         for j in range(len(his_list)):
             grouped_vec_list.append(his_list[j])
 
         return grouped_vec_list, len(his_list)
     else:
-        est_num_vec_each_block = len(his_list)/group_size
-        base_num_vec_each_block = int(np.floor(len(his_list)/group_size))
+        est_num_vec_each_block = len(his_list) / group_size
+        base_num_vec_each_block = int(np.floor(len(his_list) / group_size))
         residual = est_num_vec_each_block - base_num_vec_each_block
 
         num_vec_has_extra_vec = int(np.round(residual * group_size))
 
         if residual == 0:
             for i in range(group_size):
-                if len(his_list)<1:
+                if len(his_list) < 1:
                     print('len(his_list)<1')
                 sum = np.zeros(len(his_list[0]))
                 for j in range(base_num_vec_each_block):
-                    if i*base_num_vec_each_block+j >= len(his_list):
+                    if i * base_num_vec_each_block + j >= len(his_list):
                         print('i*num_vec_each_block+j')
-                    sum += his_list[i*base_num_vec_each_block+j]
-                grouped_vec_list.append(sum/base_num_vec_each_block)
+                    sum += his_list[i * base_num_vec_each_block + j]
+                grouped_vec_list.append(sum / base_num_vec_each_block)
         else:
 
             for i in range(group_size - num_vec_has_extra_vec):
                 sum = np.zeros(len(his_list[0]))
                 for j in range(base_num_vec_each_block):
-                    if i*base_num_vec_each_block+j >= len(his_list):
+                    if i * base_num_vec_each_block + j >= len(his_list):
                         print('i*base_num_vec_each_block+j')
-                    sum += his_list[i*base_num_vec_each_block+j]
+                    sum += his_list[i * base_num_vec_each_block + j]
                     last_idx = i * base_num_vec_each_block + j
-                grouped_vec_list.append(sum/base_num_vec_each_block)
+                grouped_vec_list.append(sum / base_num_vec_each_block)
 
             est_num = int(np.ceil(est_num_vec_each_block))
             start_group_idx = group_size - num_vec_has_extra_vec
-            if len(his_list) - start_group_idx*base_num_vec_each_block >= est_num_vec_each_block:
-                for i in range(start_group_idx,group_size):
+            if len(his_list) - start_group_idx * base_num_vec_each_block >= est_num_vec_each_block:
+                for i in range(start_group_idx, group_size):
                     sum = np.zeros(len(his_list[0]))
                     for j in range(est_num):
                         # if residual+(i-1)*est_num_vec_each_block+j >= len(his_list):
                         #     print('residual+(i-1)*num_vec_each_block+j')
                         #     print('len(his_list)')
-                        iidxx = last_idx + 1+(i-start_group_idx)*est_num+j
-                        if  iidxx >= len(his_list) or iidxx<0:
+                        iidxx = last_idx + 1 + (i - start_group_idx) * est_num + j
+                        if iidxx >= len(his_list) or iidxx < 0:
                             print('last_idx + 1+(i-start_group_idx)*est_num+j')
                         sum += his_list[iidxx]
-                    grouped_vec_list.append(sum/est_num)
+                    grouped_vec_list.append(sum / est_num)
 
         return grouped_vec_list, group_size
 
-def temporal_decay_sum_history(data_set, key_set, output_size,group_size,within_decay_rate,group_decay_rate):
+
+def temporal_decay_sum_history(data_set, key_set, output_size, group_size, within_decay_rate, group_decay_rate):
+    """this function calculate a vector representation of a user from past history"""
     sum_history = {}
     for key in key_set:
         vec_list = data_set[key]
         num_vec = len(vec_list) - 2
         his_list = []
-        for idx in range(1,num_vec+1):
+        # hist_list is a list of all basket, now all basket are converted to q-hot encode of the same
+        # size = #items
+        for idx in range(1, num_vec + 1):
+            # each basket is converted to q-hot encoded wrt #items with decay
             his_vec = np.zeros(output_size)
-            decayed_val = np.power(within_decay_rate,num_vec-idx)
+            decayed_val = np.power(within_decay_rate, num_vec - idx)
             for ele in vec_list[idx]:
                 his_vec[ele] = decayed_val
             his_list.append(his_vec)
 
-        grouped_list,real_group_size = group_history_list(his_list,group_size)
+        grouped_list, real_group_size = group_history_list(his_list, group_size)
         his_vec = np.zeros(output_size)
         for idx in range(real_group_size):
             decayed_val = np.power(group_decay_rate, group_size - 1 - idx)
-            if idx>=len(grouped_list):
-                print( 'idx: '+ str(idx))
+            if idx >= len(grouped_list):
+                print('idx: ' + str(idx))
                 print('len(grouped_list): ' + str(len(grouped_list)))
-            his_vec += grouped_list[idx]*decayed_val
-        sum_history[key] = his_vec/real_group_size
+            his_vec += grouped_list[idx] * decayed_val
+        sum_history[key] = his_vec / real_group_size
         # sum_history[key] = np.multiply(his_vec / real_group_size, IDF)
     return sum_history
 
-def partition_the_data(data_chunk,key_set):
+
+def partition_the_data(data_chunk, key_set):
     filtered_key_set = []
     for key in key_set:
-        if len(data_chunk[training_chunk][key])<=3:
+        if len(data_chunk[training_chunk][key]) <= 3:
             continue
-        if len(data_chunk[test_chunk][key])<2+next_k_step:
+        if len(data_chunk[test_chunk][key]) < 2 + next_k_step:
             continue
         filtered_key_set.append(key)
 
     training_key_set = filtered_key_set[0:int(4 / 5 * len(filtered_key_set))]
     print(len(training_key_set))
     test_key_set = filtered_key_set[int(4 / 5 * len(filtered_key_set)):]
-    return training_key_set,test_key_set
+    return training_key_set, test_key_set
 
 
 def partition_the_data_validate(data_chunk, key_set, next_k_step):
     filtered_key_set = []
-    past_chunk = 0
-    future_chunk = 1
+    past_chunk = 0 # hist data
+    future_chunk = 1 # future data
     for key in key_set:
         if len(data_chunk[past_chunk][key]) <= 3:
+            # remove users who has less than or equal 3 baskets in historal sets
+            # i.e., we only consider those users with at least 3 hist baskets and 1 future basket
             continue
         if len(data_chunk[future_chunk][key]) < 2 + next_k_step:
+            # this condition does not remove anything, other than first user and last user
             continue
         filtered_key_set.append(key)
-
-    training_key_set = filtered_key_set[0:int(4 / 5 * len(filtered_key_set)*0.9)]
-    validation_key_set = filtered_key_set[int(4 / 5 * len(filtered_key_set)*0.9):int(4 / 5 * len(filtered_key_set))]
-    print('Number of training instances: ' + str(len(training_key_set)))
+    print("filtered key set length (cust_id)", len(filtered_key_set))
+    training_key_set = filtered_key_set[0:int(4 / 5 * len(filtered_key_set) * 0.9)]
+    validation_key_set = filtered_key_set[int(4 / 5 * len(filtered_key_set) * 0.9):int(4 / 5 * len(filtered_key_set))]
     test_key_set = filtered_key_set[int(4 / 5 * len(filtered_key_set)):]
+    print('Number of training users: ' + str(len(training_key_set)))
+    print('Number of valid users: ' + str(len(validation_key_set)))
+    print('Number of test users: ' + str(len(test_key_set)))
+    # training_key_set and other key_set is a list of user Ids
+    # note that for every user in hist there is always one basket in future
+    # the train-val-test split groups different users (80%*90%, 80%*10%, 20%)  = (0.72, 0.08, 0.2)
+    # 0.72 users are used for training, etc...
     return training_key_set, validation_key_set, test_key_set
 
-def most_frequent_elements(data_chunk,index,training_key_set,output_size):
+
+def most_frequent_elements(data_chunk, index, training_key_set, output_size):
     output_vectors = []
 
-    for vec_idx in range(1,next_k_step+1):
+    for vec_idx in range(1, next_k_step + 1):
         vec = np.zeros(output_size)
         for idx in index:
             target_vec = data_chunk[test_chunk][training_key_set[idx]][vec_idx]
@@ -266,7 +279,8 @@ def most_frequent_elements(data_chunk,index,training_key_set,output_size):
         output_vectors.append(vec)
     return output_vectors
 
-def predict_with_elements_in_input(sum_history,key):
+
+def predict_with_elements_in_input(sum_history, key):
     output_vectors = []
 
     for idx in range(next_k_step):
@@ -276,10 +290,10 @@ def predict_with_elements_in_input(sum_history,key):
 
 
 def generate_dictionary_BA(files, attributes_list):
-    path = '../Minnemudac/'
-    #files = ['Coborn_history_order.csv','Coborn_future_order.csv']
-    #files = ['BA_history_order.csv', 'BA_future_order.csv']
-    #attributes_list = ['MATERIAL_NUMBER']
+    path = './'
+    # files = ['Coborn_history_order.csv','Coborn_future_order.csv']
+    # files = ['BA_history_order.csv', 'BA_future_order.csv']
+    # attributes_list = ['MATERIAL_NUMBER']
     dictionary_table = {}
     counter_table = {}
     for attr in attributes_list:
@@ -308,21 +322,24 @@ def generate_dictionary_BA(files, attributes_list):
     for key in counter_table.keys():
         total = total + counter_table[key]
 
-    print('# dimensions of final vector: ' + str(total) + ' | '+str(count-1))
-
+    print('# dimensions of final vector: ' + str(total) + ' | ' + str(count - 1))
+    # dictionary_table returns a dictionary whose key-value is shifted by 1?
     return dictionary_table, total, counter_table
 
+
 def read_claim2vector_embedding_file_no_vector(files):
-    #attributes_list = ['DRG', 'PROVCAT ', 'RVNU_CD', 'DIAG', 'PROC']
+    "what does it mean?? claim2vector??"
+    # attributes_list = ['DRG', 'PROVCAT ', 'RVNU_CD', 'DIAG', 'PROC']
     attributes_list = ['MATERIAL_NUMBER']
-    path = '../Minnemudac/'
+    path = './'
     print('start dictionary generation...')
+    # num_dim is the total number of unique items
     dictionary_table, num_dim, counter_table = generate_dictionary_BA(files, attributes_list)
     print('finish dictionary generation*****')
     usr_attr = 'CUSTOMER_ID'
     ord_attr = 'ORDER_NUMBER'
 
-    #dictionary_table, num_dim, counter_table = GDF.generate_dictionary(attributes_list)
+    # dictionary_table, num_dim, counter_table = GDF.generate_dictionary(attributes_list)
 
     freq_max = 200
     ## all the follow three ways array. First index is patient, second index is the time step, third is the feature vector
@@ -330,8 +347,8 @@ def read_claim2vector_embedding_file_no_vector(files):
     day_gap_counter = []
     claims_counter = 0
     num_claim = 0
-    code_freq_at_first_claim = np.zeros(num_dim+2)
-
+    # why plus 2 ??
+    code_freq_at_first_claim = np.zeros(num_dim + 2)
 
     for file_id in range(len(files)):
 
@@ -339,7 +356,7 @@ def read_claim2vector_embedding_file_no_vector(files):
         data_chunk.append({})
         filename = files[file_id]
         with open(path + filename, 'r') as csvfile:
-            #gap_within_one_year = np.zeros(365)
+            # gap_within_one_year = np.zeros(365)
             reader = csv.DictReader(csvfile)
             last_pid_date = '*'
             last_pid = '-1'
@@ -347,9 +364,10 @@ def read_claim2vector_embedding_file_no_vector(files):
             # 2 more elements in the end for start and end states
             feature_vector = []
             for row in reader:
+                # cur_pid_date is a combo key with costomer id + order id
                 cur_pid_date = row[usr_attr] + '_' + row[ord_attr]
                 cur_pid = row[usr_attr]
-                #cur_days = int(row[ord_attr])
+                # cur_days = int(row[ord_attr])
 
                 if cur_pid != last_pid:
                     # start state
@@ -362,21 +380,19 @@ def read_claim2vector_embedding_file_no_vector(files):
                 #
                 #         gap_within_one_year[cur_days - last_days] = gap_within_one_year[cur_days - last_days] + 1
 
-
                 if cur_pid_date not in last_pid_date:
                     if last_pid_date not in '*' and last_pid not in '-1':
                         sorted_feature_vector = np.sort(feature_vector)
                         data_chunk[file_id][last_pid].append(sorted_feature_vector)
                         if len(sorted_feature_vector) > 0:
                             count = count + 1
-                        #data_chunk[file_id][last_pid].append(feature_vector)
+                        # data_chunk[file_id][last_pid].append(feature_vector)
                     feature_vector = []
 
                     claims_counter = 0
                 if cur_pid != last_pid:
                     # end state
                     if last_pid not in '-1':
-
                         tmp = [-1]
                         data_chunk[file_id][last_pid].append(tmp)
 
@@ -395,28 +411,27 @@ def read_claim2vector_embedding_file_no_vector(files):
 
                 last_pid_date = cur_pid_date
                 last_pid = cur_pid
-                #last_days = cur_days
+                # last_days = cur_days
                 if file_id == 1:
                     claims_counter = claims_counter + 1
-
 
             if last_pid_date not in '*' and last_pid not in '-1':
                 data_chunk[file_id][last_pid].append(np.sort(feature_vector))
         # if file_id != 0 and file_id != 2:
         #     day_gap_counter.append(gap_within_one_year)
         # print('num of vectors having entries more than 1: ' + str(count))
-  #  print(len(data_chunk[0]))
+    #  print(len(data_chunk[0]))
 
-    #print(data_chunk[0]['33050811449.0'])
+    # print(data_chunk[0]['33050811449.0'])
 
-#    print(data_chunk[0]['33051194484.0'])
+    #    print(data_chunk[0]['33051194484.0'])
 
- #   print(data_chunk[0]['33051313687.0'])
+    #   print(data_chunk[0]['33051313687.0'])
 
     return data_chunk, num_dim + 2, code_freq_at_first_claim
 
 
-def get_precision_recall_Fscore(groundtruth,pred):
+def get_precision_recall_Fscore(groundtruth, pred):
     a = groundtruth
     b = pred
     correct = 0
@@ -435,21 +450,22 @@ def get_precision_recall_Fscore(groundtruth,pred):
     if 0 == positive:
         precision = 0
         flag = 1
-        #print('postivie is 0')
+        # print('postivie is 0')
     else:
-        precision = correct/positive
+        precision = correct / positive
     if 0 == truth:
         recall = 0
         flag = 1
-        #print('recall is 0')
+        # print('recall is 0')
     else:
-        recall = correct/truth
+        recall = correct / truth
 
     if flag == 0 and precision + recall > 0:
-        F = 2*precision*recall/(precision+recall)
+        F = 2 * precision * recall / (precision + recall)
     else:
         F = 0
     return precision, recall, F, correct
+
 
 def get_F_score(prediction, test_Y):
     jaccard_similarity = []
@@ -489,26 +505,28 @@ def get_F_score(prediction, test_Y):
     print('average F score: ' + str(
         np.mean(jaccard_similarity)))
 
-def get_DCG(groundtruth, pred_rank_list,k):
+
+def get_DCG(groundtruth, pred_rank_list, k):
     count = 0
     dcg = 0
     for pred in pred_rank_list:
         if count >= k:
             break
         if groundtruth[pred] == 1:
-            dcg += (1)/math.log2(count+1+1)
+            dcg += (1) / math.log2(count + 1 + 1)
         count += 1
 
     return dcg
 
-def get_NDCG1(groundtruth, pred_rank_list,k):
+
+def get_NDCG1(groundtruth, pred_rank_list, k):
     count = 0
     dcg = 0
     for pred in pred_rank_list:
         if count >= k:
             break
         if groundtruth[pred] == 1:
-            dcg += (1)/math.log2(count+1+1)
+            dcg += (1) / math.log2(count + 1 + 1)
         count += 1
     idcg = 0
     num_real_item = np.sum(groundtruth)
@@ -518,7 +536,8 @@ def get_NDCG1(groundtruth, pred_rank_list,k):
     ndcg = dcg / idcg
     return ndcg
 
-def get_HT(groundtruth, pred_rank_list,k):
+
+def get_HT(groundtruth, pred_rank_list, k):
     count = 0
     for pred in pred_rank_list:
         if count >= k:
@@ -529,15 +548,18 @@ def get_HT(groundtruth, pred_rank_list,k):
 
     return 0
 
-#input_size = 100
+
+# input_size = 100
 topk = 10
+
 
 def softmax(x):
     """Compute softmax values for each sets of scores in x."""
     e_x = np.exp(x - np.max(x))
-    return e_x / e_x.sum(axis=0) # only difference
+    return e_x / e_x.sum(axis=0)  # only difference
 
-def merge_history(sum_history_test,test_key_set,training_sum_history_test,training_key_set,index,alpha):
+
+def merge_history(sum_history_test, test_key_set, training_sum_history_test, training_key_set, index, alpha):
     merged_history = {}
     for test_key_id in range(len(test_key_set)):
         test_key = test_key_set[test_key_id]
@@ -546,16 +568,17 @@ def merge_history(sum_history_test,test_key_set,training_sum_history_test,traini
         for indecis in index[test_key_id]:
             training_key = training_key_set[indecis]
             sum_training_history += training_sum_history_test[training_key]
-
-        sum_training_history = sum_training_history/len(index[test_key_id])
-
-        merge = test_history*alpha + sum_training_history*(1-alpha)
+        # sum_training_history is the sum of all similar users
+        sum_training_history = sum_training_history / len(index[test_key_id])
+        # the merged one is a weight sum of user's own vector representation plus their similar users' vector
+        merge = test_history * alpha + sum_training_history * (1 - alpha)
         merged_history[test_key] = merge
 
     return merged_history
 
-def merge_history_and_neighbors_future(future_data, sum_history_test, test_key_set,training_sum_history_test,
-                                       training_key_set,index,alpha, beta):
+
+def merge_history_and_neighbors_future(future_data, sum_history_test, test_key_set, training_sum_history_test,
+                                       training_key_set, index, alpha, beta):
     merged_history = {}
     for test_key_id in range(len(test_key_set)):
         test_key = test_key_set[test_key_id]
@@ -570,16 +593,17 @@ def merge_history_and_neighbors_future(future_data, sum_history_test, test_key_s
                 if idx >= 0:
                     sum_training_future[idx] += 1
 
-        sum_training_history = sum_training_history/len(index[test_key_id])
-        sum_training_future = sum_training_future/len(index[test_key_id])
+        sum_training_history = sum_training_history / len(index[test_key_id])
+        sum_training_future = sum_training_future / len(index[test_key_id])
 
-        merge = (test_history*alpha + sum_training_history*(1-alpha))* beta + sum_training_future*(1-beta)
+        merge = (test_history * alpha + sum_training_history * (1 - alpha)) * beta + sum_training_future * (1 - beta)
         merged_history[test_key] = merge
 
     return merged_history
 
-def evaluate(data_chunk,  training_key_set, test_key_set, input_size, group_size,
-             within_decay_rate, group_decay_rate, num_nearest_neighbors, alpha,  topk):
+
+def evaluate(data_chunk, training_key_set, test_key_set, input_size, group_size,
+             within_decay_rate, group_decay_rate, num_nearest_neighbors, alpha, topk):
     activate_codes_num = -1
     temporal_decay_sum_history_training = temporal_decay_sum_history(data_chunk[training_chunk],
                                                                      training_key_set, input_size,
@@ -591,11 +615,10 @@ def evaluate(data_chunk,  training_key_set, test_key_set, input_size, group_size
                                                                  group_decay_rate)
     index, distance = KNN(temporal_decay_sum_history_test, temporal_decay_sum_history_training,
                           num_nearest_neighbors)
-
-
+    # with above, we get the top 300 most similar users to those from test set
+    # sum history if for test users, aka users to be predicted
     sum_history = merge_history(temporal_decay_sum_history_test, test_key_set, temporal_decay_sum_history_training,
                                 training_key_set, index, alpha)
-
 
     if activate_codes_num < 0:
         # for i in range(1, 6):
@@ -670,7 +693,6 @@ def evaluate(data_chunk,  training_key_set, test_key_set, input_size, group_size
             if hit == next_k_step:
                 n_hit += 1
 
-
         # print('average precision of ' + ': ' + str(np.mean(prec)) + ' with std: ' + str(np.std(prec)))
         recall = np.mean(rec)
         ndcg = np.mean(NDCG)
@@ -680,15 +702,18 @@ def evaluate(data_chunk,  training_key_set, test_key_set, input_size, group_size
 
 
 def main(argv):
-
-
     files = [argv[1], argv[2]]
-
+    # input_size = #item + 2, why plus 2??
     data_chunk, input_size, code_freq_at_first_claim = read_claim2vector_embedding_file_no_vector(files)
-
-    training_key_set, validation_key_set, test_key_set = partition_the_data_validate(data_chunk, list(data_chunk[test_chunk]), 1)
-
-
+    # data_chunk stores the dictionary for hist and future dataset
+    # data_chunk[0]["2"] 0 index correspondes to hist file, "2" is the user_id, the value of this key
+    # stores the the sequence of baskets for user id 2, note that in the chunk_data, there is -1 at the start
+    # data_chunk[1] stores the future set, note that because we want to predict the last basket of a user
+    # there is only one basket per user
+    ########
+    # list(data_chunk[test_chunk]) is the list of all user ids
+    training_key_set, validation_key_set, test_key_set = partition_the_data_validate(data_chunk,
+                                                                                     list(data_chunk[test_chunk]), 1)
 
     num_nearest_neighbors = int(argv[3])
     within_decay_rate = float(argv[4])
@@ -704,16 +729,16 @@ def main(argv):
     # group_size = 7
     # topk = 10
 
-
     print('Num. of top: ', topk)
     recall, ndcg, hr = evaluate(data_chunk, training_key_set, test_key_set, input_size,
                                 group_size, within_decay_rate, group_decay_rate,
-                                num_nearest_neighbors, alpha,  topk)
+                                num_nearest_neighbors, alpha, topk)
 
     print('recall: ', str(recall))
     print('NDCG: ', str(ndcg))
     # print('hit ratio: ', str(hr))
     sys.stdout.flush()
+
 
 if __name__ == '__main__':
     main(sys.argv)
